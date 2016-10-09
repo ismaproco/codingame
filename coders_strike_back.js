@@ -175,8 +175,6 @@ while (true) {
     //printErr('error ' + nextCheckpointDist + ' ' + nextCheckpointAngle + ' ' + thrust + ' b:'+boost + ' ' + avgSpeed + ' ' + segmentChange  );
     //printErr('x,y ' + x +',' + y +  ' opponent:' + opponentX + ',' + opponentY  );
 
-
-
     printErr('Vector vnchk 1: ' + vnchk + ' magnitude: ' + parseInt(vnchk.length()) );
     printErr('Vector v0v1 1: ' + v0v1 + ' magnitude: ' +  parseInt( v0v1.length() ) );
     printErr('Vector vehicle 1: ' + vv1 + ' magnitude: ' +  parseInt( vv1.length() ) );
@@ -198,90 +196,3 @@ while (true) {
 
     print(finalx + ' ' + finaly +' ' + thrust );
 }
-
-
-
-/*
-
-
-// Write an action using print()
-    // To debug: printErr('Debug messages...');
-
-    
-    // You have to output the target position
-    // followed by the power (0 <= thrust <= 100)
-    // i.e.: "x y thrust"
-    var thrust = 100;
-    // if( nextCheckpointDist < 4000 ) {
-    //     thrust = 80;
-    // } else if( nextCheckpointDist < 2000 ) {
-    //     thrust = 50;
-    // } else if( nextCheckpointDist < 1000 ) {
-    //     thrust = 30;
-    // } else {
-    //     if(segmentChange) {
-    //         thrust = 50;
-    //     }else {
-    //         thrust = 100;
-    //     }
-        
-    // }
-
-    if( nextCheckpointDist < 1000 ) {
-        thrust = 20;
-    }
-    
-    
-    if( nextCheckpointAngle > 90 || nextCheckpointAngle < -90 ) {
-        if( nextCheckpointDist > 6000) {
-            thrust = incrementWithLimit( thrust , 0.4 , 80 );
-        }else {
-            thrust = 10;    
-        }
-    } else if( nextCheckpointAngle > 10 || nextCheckpointAngle < -10 ){
-
-        if( Math.abs( avgSpeed ) > 500 ) {
-            thrust = 60;
-        }
-        thrust = incrementWithLimit( thrust , 0.3 , 80 );
-    }
-    
-    // // booster correction
-    if( nextCheckpointDist < 4000 && avgSpeed > 600 && ( nextCheckpointAngle < -5 || nextCheckpointAngle > 5 ) ) {
-        printErr('-- fixed ');
-        if(thrust > 40) {
-            thrust = 10;
-        }
-    }
-    
-    
-    // distances cache
-    
-    if( segmentChange ) {
-        segmentChange = false;
-    }
-    
-    if( avgSpeed < -1){
-        arrDistances.push( nextCheckpointDist );
-        segmentChange = true;
-    }
-    
-    avgSpeed  = prevDistance - nextCheckpointDist;
-    prevDistance = nextCheckpointDist;
-    
-    
-    //
-    var finalx = nextCheckpointX;
-    var finaly = nextCheckpointY;
-    // boost logic
-    if(boost >= 1) {
-        if( nextCheckpointDist > 7500 && ( nextCheckpointAngle == 0 ) ) {
-            printErr('burst ' + nextCheckpointDist + ' ' + nextCheckpointAngle + ' ' + thrust + ' b:'+boost);
-            thrust = 'BOOST';
-            boost -=1;
-            boostedSegment = true;
-        }
-    }
-
-
-*/
