@@ -81,14 +81,33 @@ var boostedSegment=false, segmentChange=false, prevDistance = 0;
 
 
 // arrival break
-function arrivalBreak( position, distance, slowingRadius, maxVelocity ){
+function arrivalBreak( position, distance, slowingRadius, maxVelocity, nextAngle ){
     var desired_velocity;
+    
+    nextAngle = Math.abs(nextAngle);
 
+    if(nextAngle ) {
+        if( nextAngle > 110 && distance < slowingRadius * 1.5 ) {
+            maxVelocity = maxVelocity /4;
+            desired_velocity = position.normalize().scale(  maxVelocity * ( distance / (slowingRadius * 1.5 ) ) );
+        }else if( nextAngle > 90 && distance < slowingRadius * 1.3 ) {
+            maxVelocity = maxVelocity /3;
+            desired_velocity = position.normalize().scale(  maxVelocity * ( distance / (slowingRadius * 1.3 ) ) );
+        } else if( nextAngle > 50 && distance < slowingRadius *(1.2)) {
+            maxVelocity = maxVelocity /2;
+            desired_velocity = position.normalize().scale(  maxVelocity * ( distance / slowingRadius * (1.2) ) );
+        } else if( nextAngle > 20 && distance < slowingRadius *(1.2)) {
 
-    if( distance < slowingRadius ) {
-        desired_velocity = position.normalize().scale(  maxVelocity * ( distance / slowingRadius ) );
+            desired_velocity = position.normalize().scale(  maxVelocity * ( distance / slowingRadius * (1.2) ) );
+        } else {
+            desired_velocity = position.normalize().scale(  maxVelocity );
+        }
     } else {
-        desired_velocity = position.normalize().scale(  maxVelocity );
+        if( distance < slowingRadius ) {
+            desired_velocity = position.normalize().scale(  (maxVelocity / 2) * ( distance / slowingRadius ) );
+        } else {
+            desired_velocity = position.normalize().scale(  maxVelocity );
+        }
     }
 
     return desired_velocity;
@@ -96,18 +115,33 @@ function arrivalBreak( position, distance, slowingRadius, maxVelocity ){
 
 // steer
 
-function outSteer( position, prevdistance, steeringRadius, maxVelocity, angle ){
+function outSteer( position, prevdistance, nextdistance,steeringRadius, maxVelocity, angle ){
     var desired_velocity;
-    
-    if( Math.abs( angle ) < 1 ) {
-        desired_velocity = position.normalize().scale(  maxVelocity );
-    } else if( Math.abs( angle ) > 50 ) {
-        printErr('error: ' +prevdistance + ' rad: '+ steeringRadius )
-        desired_velocity = position.normalize().scale(  ( maxVelocity * 0.60 ) * ( prevdistance / steeringRadius ) );        
+    if(nextdistance > 2500) {
+        if( Math.abs( angle ) < 1 ) {
+            desired_velocity = position.normalize().scale(  maxVelocity );
+        } else if( Math.abs( angle ) > 90 ) {
+            printErr('error: ' +prevdistance + ' rad: '+ steeringRadius )
+            desired_velocity = position.normalize().scale(  ( maxVelocity * 0.90 ) * ( prevdistance / (steeringRadius ) ) );        
+        // } else if( Math.abs( angle ) > 70 ) {
+        //     printErr('error: ' +prevdistance + ' rad: '+ steeringRadius )
+        //     desired_velocity = position.normalize().scale(  ( maxVelocity * 0.92 ) * ( prevdistance / (steeringRadius ) ) );        
+        // } else if( Math.abs( angle ) > 50 ) {
+        //     printErr('error: ' +prevdistance + ' rad: '+ steeringRadius )
+        //     desired_velocity = position.normalize().scale(  ( maxVelocity * 0.95 ) * ( prevdistance / steeringRadius ) );        
+        } else {
+            printErr('error: ' +prevdistance + ' rad: '+ steeringRadius )
+            desired_velocity = position.normalize().scale(  maxVelocity * ( prevdistance / steeringRadius ) );
+        }    
     } else {
-        printErr('error: ' +prevdistance + ' rad: '+ steeringRadius )
-        desired_velocity = position.normalize().scale(  maxVelocity * ( prevdistance / steeringRadius ) );
+        if( Math.abs( angle ) > 60 ) {
+            printErr('error: ' +prevdistance + ' rad: '+ steeringRadius )
+            desired_velocity = position.normalize().scale(  ( maxVelocity * 0.1 ) * ( prevdistance / (steeringRadius ) ) );        
+        } else {
+            desired_velocity = position.normalize().scale(  maxVelocity * ( prevdistance / steeringRadius ) );
+        }
     }
+    
 
     return desired_velocity;
 }
@@ -130,7 +164,7 @@ function isOpponentInPositionToPush( vh1, vh2, nextCheck, nextCheckpointAngle, a
         + ' nangle: ' + nextCheckpointAngle 
         + ' avg:' + avgSpeed);
 
-    if(v2 < 1500 && v3 > 2500 && Math.abs(nextCheckpointAngle) < 20 && Math.abs(avgSpeed > 200) && angleDeg < 120) {
+    if(v2 < 1000 && v3 > 2500 && Math.abs(avgSpeed > 200) && Math.abs(nextCheckpointAngle) < 86 ) { // && Math.abs(nextCheckpointAngle) < 20  && angleDeg < 120
         return true;
     } else {
         return false;
@@ -166,16 +200,20 @@ function recalcDestinationVector(vh, pvc, nc, avgSpeed, angle) {
 
     var tp = nc.subtract(pvc);
     var dvh= vh.subtract(pvc);
+    var dnc = nc.subtract(vh);
 
-    if( Math.abs(angle) > 4 && dvh.length() < tp.length()*0.5){
-        dv = pvc.add(tp.scale(0.9));
-        printErr( '=== vchange ' + dv +' ' + dvh.length() + ' ' + tp.length());
+    if(tp.length() < 4500 && angle > 20) {
+        dv = vh.add(dnc.scale(0.5));
+        printErr( '=== vchange-low ' + dv +' ' + Math.round(dvh.length()) + ' ' + Math.round(tp.length()) );
+    } else if(tp.length() > 4500 && Math.abs(angle) > 4 && dvh.length() < tp.length()*0.5){
+        dv = pvc.add(tp.scale(0.6));
+        printErr( '=== vchange-high ' + dv +' ' + dvh.length() + ' ' + tp.length());
     } else {
         dv.init(dx, dy);
     }
 
     
-    printErr(' v ' + dv.x + ' ' + dv.y + ' pv ' + px + ' ' + py + ' nv ' + dx + ' ' + dy);
+    printErr(' v ' + dv.x + ' ' + dv.y + ' pv ' + px + ' ' + py + ' nv ' + dx + ' ' + dy+ ' a:' + angle + ' nd:' + Math.round(dnc.length()));
 
     return dv;
 }
@@ -191,7 +229,7 @@ var vv1 = new Vec2(); // vector next checkpoint
 var prevD = new Vec2();
 var fv,currentchk = new Vec2(0,0),prevchk = new Vec2(0,0);
 
-var angles = [];
+var angles = {};
 var boost = 1, boostedSegment = false;
 
 
@@ -218,14 +256,14 @@ while (true) {
     vv1 = vnchk.subtract( v0v1 );
 
     v0v2.init( opponentX, opponentY );
-
-
     
     if( !vnchk.equal( currentchk ) && segmentChange == false ) {
         //printErr('SegChange: ' + segmentChange + ' ' + prevchk);
         segmentChange = true;
-        angles.push( nextCheckpointAngle );
-
+        if(!angles[currentchk.x +' '+ currentchk.y]) { // add the previous angle to the array
+            angles[currentchk.x +' '+ currentchk.y] = nextCheckpointAngle;    
+        }
+        
         prevchk.x = currentchk.x;
         prevchk.y = currentchk.y;
 
@@ -238,28 +276,38 @@ while (true) {
     prevD.x = vv1.x;
     prevD.y = vv1.y;
 
+    // destination vector recalculation
+    // var vcalc = recalcDestinationVector( v0v1, prevchk, vnchk, avgSpeed , nextCheckpointAngle);
+    // finalx = Math.round( vcalc.x );
+    // finaly = Math.round( vcalc.y );
+
+
     // section management
     var section = sectionManager(v0v1, prevchk, vnchk, 1000, 2500);
 
     if( section == sections.steer ) {
-        fv = outSteer( vv1, v0v1.subtract( prevchk ).length(), 1000, 100, nextCheckpointAngle);
+        fv = outSteer( vv1, v0v1.subtract( prevchk ).length(), currentchk.subtract( v0v1 ).length()  ,900, 100, nextCheckpointAngle);
         segmentChange = false;    
     } else if( section == sections.break ){
-        fv = arrivalBreak(vv1, vv1.length(), 1200, 100);
+        // if the destination vector change, change the breaking radious
+        // the destination vector can change because of a hit or because destionation recalc
+        fv = arrivalBreak(vv1, vv1.length(), 1000, 100, angles[vnchk.x +' '+ vnchk.y]);    
     } else {
-        fv = vv1.normalize().scale( 100 );
+        if(Math.abs(nextCheckpointAngle)  > 0) {
+            fv = vv1.normalize().scale( 99 );    
+        } else {
+            fv = vv1.normalize().scale( 100 );
+        }
     }
+
+    fv = vv1.normalize().scale( 100 );
 
     // opponent attack calculation
     if( isOpponentInPositionToPush(v0v1, v0v2, vnchk, nextCheckpointAngle, avgSpeed) ) {
         finalx = v0v2.scale(1000).x;
         finaly = v0v2.scale(1000).y;
+        printErr('PUSH ' + nextCheckpointDist + ' ' + nextCheckpointAngle + ' ' + thrust + ' b:'+boost);
     }
-
-    var vcalc = recalcDestinationVector( v0v1, prevchk, vnchk, avgSpeed , nextCheckpointAngle);
-    finalx = Math.round( vcalc.x );
-    finaly = Math.round( vcalc.y );
-
 
     //printErr('error ' + nextCheckpointDist + ' ' + nextCheckpointAngle + ' ' + thrust + ' b:'+boost + ' ' + avgSpeed + ' ' + segmentChange  );
     //printErr('x,y ' + x +',' + y +  ' opponent:' + opponentX + ',' + opponentY  );
@@ -286,6 +334,6 @@ while (true) {
             boostedSegment = true;
         }
     }
-    printErr('x,y' + finalx +',' +finaly);
+    printErr('x,y' + finalx +',' +finaly + ' ' + thrust + ' a ' + angles[vnchk.x +' '+ vnchk.y]);
     print(finalx + ' ' + finaly +' ' + thrust );
 }
