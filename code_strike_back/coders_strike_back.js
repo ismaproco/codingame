@@ -55,9 +55,19 @@ Vec2.prototype.rotate = function (ang) {
     var cos = Math.cos(ang),
         sin = Math.sin(ang),
         vec = this;
-    return new Vec2(Math.round(10000 * (vec.x * cos - vec.y * sin)) / 10000,
-                        Math.round(10000 * (vec.x * sin + vec.y * cos)) / 10000);
+    return new Vec2( Math.round(10000 * (vec.x * cos - vec.y * sin)) / 10000,
+                     Math.round(10000 * (vec.x * sin + vec.y * cos)) / 10000);
 };
+
+
+Vec2.prototype.angle = function angle(v2) {
+  var dy = v2.y - this.y;
+  var dx = v2.x - this.x;
+  var theta = Math.atan2(dy, dx); // range (-PI, PI]
+  theta *= 180 / Math.PI; // rads to degs, range (-180, 180]
+  //if (theta < 0) theta = 360 + theta; // range [0, 360)
+  return theta;
+}
 
 /*
     Utility methods
@@ -66,7 +76,11 @@ Vec2.prototype.rotate = function (ang) {
 var Vehicle = function( x,y, nextAngle ) {
     this.position = new Vec2();
     this.prevPosition = new Vec2();
+    this.nextCheckPosition = new Vec2();
     this.thrust = 0;
+    this.boost = 1;
+    this.finalx = 0;
+    this.finaly = 0;
 };
 
 Vehicle.prototype.setPosition = function(x,y) {
@@ -81,21 +95,50 @@ Vehicle.prototype.setAngle = function( nextAngle ) {
     this.nextAngle = nextAngle;
 };
 
+Vehicle.prototype.setNextcheck = function( nextCheckPositionVector ) {
+    this.nextCheckPosition = nextCheckPositionVector;
+    this.finalx = this.nextCheckPosition.x;
+    this.finaly = this.nextCheckPosition.y;
+};
+
 
 Vehicle.prototype.calculateSpeedVector = function( ) {
     this.speedX = this.position.x - this.prevPosition.x;
     this.speedY = this.position.y - this.prevPosition.y;
+    this.speed = new Vec2(this.speedX, this.speedY);
 };
 
 
 Vehicle.prototype.calculateThrust = function( distance ) {
-    if( this.nextAngle < 2 && distance > 4000) {
+    if( this.boost > 0 && Math.abs(this.nextAngle < 2) && distance > 4000) {
         this.thrust = 'BOOST';
+        this.boost = this.boost - 1;
     } else {
-        this.thrust = 100;
+        if( Math.abs(this.nextAngle) > 90 ) {
+            this.thrust = 0;
+        } else if( Math.abs(this.nextAngle) > 65) {
+            this.thrust = 50;   
+        } else if( Math.abs(this.nextAngle) > 35) {
+            this.thrust = 75;   
+        } else if( Math.abs(this.nextAngle) > 5) {
+            this.thrust = 85; 
+        } else {
+            this.thrust = 100;    
+        }
     }
 };
-// global variables
+
+
+Vehicle.prototype.calculateCollision = function( vehicle2 ) {
+    var distance = this.position.subtract(vehicle2.position).length();
+    // var orthoV = this.position.normalize().subtract(vehicle2.position.normalize());
+    // var deltaAngle = orthoV.angle(vehicle2.position); 
+    // printErr('=U ' + deltaAngle);
+    if( distance < 800 && Math.abs(this.nextAngle) < 10 ){
+        return true;
+    }
+    return false;
+};// global variables
 
 // var vnchk = new Vec2(); // vector next checkpoint
 // var v0v1 = new Vec2(); // vector vehicule 1 from origin
@@ -112,6 +155,8 @@ Vehicle.prototype.calculateThrust = function( distance ) {
 
 var finalx, finaly;
 var vehicle = new Vehicle();
+var opponent = new Vehicle();
+
 var nextCheckpointVector = new Vec2();
 
 /**
@@ -136,14 +181,29 @@ while (true) {
 
     //var thrust = 100, finalx = nextCheckpointX,  finaly = nextCheckpointY;
 
+    nextCheckpointVector.x = nextCheckpointX;
+    nextCheckpointVector.y = nextCheckpointY;
+
     vehicle.setPosition(x, y);
     vehicle.setAngle( nextCheckpointAngle );
     vehicle.calculateSpeedVector();
-
     vehicle.calculateThrust( nextCheckpointDist );
 
-    finalx = nextCheckpointX;
-    finaly = nextCheckpointY;
+    opponent.setPosition(opponentX, opponentY);
+    opponent.calculateSpeedVector( );
+
+
+    vehicle.setNextcheck(nextCheckpointVector);
+
+    if(vehicle.calculateCollision(opponent)){
+        //change vehicle destination vector
+        vehicle.finalx = opponent.position.add( opponent.position.subtract(vehicle.position) ).scale(2).x;
+        vehicle.finaly = opponent.position.add( opponent.position.subtract(vehicle.position) ).scale(2).y;
+    }
+    printErr('error: ' + opponent.position.angle( opponent.position.subtract(vehicle.position) )    );
+
+    finalx = Math.round(vehicle.finalx);
+    finaly = Math.round(vehicle.finaly);
 
 
     // vnchk.init( nextCheckpointX, nextCheckpointY );
@@ -232,6 +292,14 @@ while (true) {
     // }
     
     printErr('x,y,thrust' + finalx +',' +finaly + ' ' + vehicle.thrust );
-    printErr('sx, sy' + vehicle.speedX +', ' +vehicle.speedY + ' ' + vehicle.position + ' ' + vehicle.prevPosition);
+    printErr('sx, sy ' + vehicle.speedX +', ' + vehicle.speedY + ' ' +
+                        vehicle.position + ' ' + vehicle.prevPosition);
+    printErr('boost, distance, angle ' + vehicle.boost + ' ' +
+                         nextCheckpointDist + ' ' + vehicle.nextAngle);
+    printErr('collision ' + vehicle.calculateCollision(opponent) + ' sv ' +
+                 vehicle.speed.length() +
+                 ' angleOp: ' + vehicle.position.angle(opponent.position) );
+
+
     print(finalx + ' ' + finaly +' ' + vehicle.thrust );
 }

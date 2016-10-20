@@ -15,6 +15,8 @@
 
 var finalx, finaly;
 var vehicle = new Vehicle();
+var opponent = new Vehicle();
+
 var nextCheckpointVector = new Vec2();
 
 /**
@@ -39,14 +41,29 @@ while (true) {
 
     //var thrust = 100, finalx = nextCheckpointX,  finaly = nextCheckpointY;
 
+    nextCheckpointVector.x = nextCheckpointX;
+    nextCheckpointVector.y = nextCheckpointY;
+
     vehicle.setPosition(x, y);
     vehicle.setAngle( nextCheckpointAngle );
     vehicle.calculateSpeedVector();
-
     vehicle.calculateThrust( nextCheckpointDist );
 
-    finalx = nextCheckpointX;
-    finaly = nextCheckpointY;
+    opponent.setPosition(opponentX, opponentY);
+    opponent.calculateSpeedVector( );
+
+
+    vehicle.setNextcheck(nextCheckpointVector);
+
+    if(vehicle.calculateCollision(opponent)){
+        //change vehicle destination vector
+        vehicle.finalx = opponent.position.add( opponent.position.subtract(vehicle.position) ).scale(2).x;
+        vehicle.finaly = opponent.position.add( opponent.position.subtract(vehicle.position) ).scale(2).y;
+    }
+    printErr('error: ' + opponent.position.angle( opponent.position.subtract(vehicle.position) )    );
+
+    finalx = Math.round(vehicle.finalx);
+    finaly = Math.round(vehicle.finaly);
 
 
     // vnchk.init( nextCheckpointX, nextCheckpointY );
@@ -135,6 +152,14 @@ while (true) {
     // }
     
     printErr('x,y,thrust' + finalx +',' +finaly + ' ' + vehicle.thrust );
-    printErr('sx, sy' + vehicle.speedX +', ' +vehicle.speedY + ' ' + vehicle.position + ' ' + vehicle.prevPosition);
+    printErr('sx, sy ' + vehicle.speedX +', ' + vehicle.speedY + ' ' +
+                        vehicle.position + ' ' + vehicle.prevPosition);
+    printErr('boost, distance, angle ' + vehicle.boost + ' ' +
+                         nextCheckpointDist + ' ' + vehicle.nextAngle);
+    printErr('collision ' + vehicle.calculateCollision(opponent) + ' sv ' +
+                 vehicle.speed.length() +
+                 ' angleOp: ' + vehicle.position.angle(opponent.position) );
+
+
     print(finalx + ' ' + finaly +' ' + vehicle.thrust );
 }

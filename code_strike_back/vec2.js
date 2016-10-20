@@ -55,7 +55,17 @@ Vec2.prototype.rotate = function (ang) {
     var cos = Math.cos(ang),
         sin = Math.sin(ang),
         vec = this;
-    return new Vec2(Math.round(10000 * (vec.x * cos - vec.y * sin)) / 10000,
-                        Math.round(10000 * (vec.x * sin + vec.y * cos)) / 10000);
+    return new Vec2( Math.round(10000 * (vec.x * cos - vec.y * sin)) / 10000,
+                     Math.round(10000 * (vec.x * sin + vec.y * cos)) / 10000);
 };
+
+
+Vec2.prototype.angle = function angle(v2) {
+  var dy = v2.y - this.y;
+  var dx = v2.x - this.x;
+  var theta = Math.atan2(dy, dx); // range (-PI, PI]
+  theta *= 180 / Math.PI; // rads to degs, range (-180, 180]
+  //if (theta < 0) theta = 360 + theta; // range [0, 360)
+  return theta;
+}
 
